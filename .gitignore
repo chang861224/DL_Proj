@@ -1,5 +1,7 @@
 # Chinese Word Vector Data
 cna.cbow.cwe_p.tar_g.512d.0.txt
+data.zip
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
