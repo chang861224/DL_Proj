@@ -85,10 +85,10 @@ with open('cna.cbow.cwe_p.tar_g.512d.0.txt') as f:
         vec = np.array([ float(t) for t in tokens[1:] ])
         word_vecs[word] = vec
 
-print('vocabulary_size: ',len(word_vecs),' word_vector_dim: ',vec.shape)
+#print('vocabulary_size: ',len(word_vecs),' word_vector_dim: ',vec.shape)
 
 
-file_path = './data/train_1_update.txt'
+file_path = './textdata/train_1_update.txt'
 trainingset, position, mentions = loadInputFile(file_path)
 
 data_path='data/train.data'
@@ -105,7 +105,7 @@ testembed_list = Word2Vector(testdata_list, word_vecs)
 # CRF - Train Data (Augmentation Data)
 x_train = Feature(trainembed_list)
 y_train = Preprocess(traindata_list)
-"""
+
 # CRF - Test Data (Golden Standard)
 x_test = Feature(testembed_list)
 y_test = Preprocess(testdata_list)
@@ -113,4 +113,4 @@ y_test = Preprocess(testdata_list)
 y_pred, y_pred_mar, f1score = CRF(x_train, y_train, x_test, y_test)
 
 print(f1score)
-"""
+
