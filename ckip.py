@@ -5,8 +5,8 @@ ws = WS('./data')
 pos = POS('./data')
 ner = NER('./data')
 
-text = loadRawData('./textdata/document_1.txt')
-#text = loadRawData('./textdata/document_2.txt')
+text = loadRawData('./textdata/development_1.txt')
+#text = loadRawData('./textdata/deveploment_2.txt')
 
 text_list = [text[key] for key in text.keys()]
 
