@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm, trange
 from sentence import SentenceGetter
+from preprocessing import loadRawData
 
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
@@ -78,7 +79,7 @@ valid_dataloader = DataLoader(valid_data, sampler=valid_sampler, batch_size=bs)
 
 model = BertForTokenClassification.from_pretrained('bert-base-chinese',
         num_labels=len(tag2idx), output_attentions=False, output_hidden_states=False)
-#model.cuda();
+model.cuda();
 
 FULL_FINETUNING = True
 if FULL_FINETUNING:
@@ -138,8 +139,7 @@ for _ in trange(epochs, desc="Epoch"):
         # forward pass
         # This will return the loss (rather than the model output)
         # because we have provided the `labels`.
-        outputs = model(b_input_ids, token_type_ids=None,
-                        attention_mask=b_input_mask, labels=b_labels)
+        outputs = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
         # get the loss
         loss = outputs[0]
         # Perform a backward pass to calculate the gradients.
@@ -205,4 +205,28 @@ for _ in trange(epochs, desc="Epoch"):
     print("Validation F1-Score: {}".format(f1_score(pred_tags, valid_tags)))
     print()
 
-#print("A")
+
+text = loadRawData('./textdata/development_2.txt')
+
+for key in text.keys():
+    test_sentence = text[key]
+
+    tokenized_sentence = tokenizer.encode(test_sentence)
+    input_ids = torch.tensor([tokenized_sentence]).cuda()
+
+    with torch.no_grad():
+        output = model(input_ids)
+    label_indices = np.argmax(output[0].to('cpu').numpy(), axis=2)
+
+    tokens = tokenizer.convert_ids_to_tokens(input_ids.to('cpu').numpy()[0])
+    new_tokens, new_labels = [], []
+    for token, label_idx in zip(tokens, label_indices[0]):
+        if token.startswith("##"):
+            new_tokens[-1] = new_tokens[-1] + token[2:]
+        else:
+            new_labels.append(tag_values[label_idx])
+            new_tokens.append(token)
+
+    for token, label in zip(new_tokens, new_labels):
+        print("{}\t{}".format(label, token))
+
