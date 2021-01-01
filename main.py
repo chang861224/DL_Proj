@@ -88,13 +88,11 @@ with open('cna.cbow.cwe_p.tar_g.512d.0.txt') as f:
 #print('vocabulary_size: ',len(word_vecs),' word_vector_dim: ',vec.shape)
 
 
-file_path = './textdata/train_1_update.txt'
+file_path = './textdata/train_2.txt'
 trainingset, position, mentions = loadInputFile(file_path)
 
-data_path='data/train.data'
+data_path='./textdata/train.data'
 CRFFormatData(trainingset, position, data_path)
-
-#print(mentions['陳明明醫師'])
 
 data_list, traindata_list, testdata_list, traindata_article_id_list, testdata_article_id_list = Dataset(data_path)
 
