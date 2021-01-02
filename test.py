@@ -4,7 +4,7 @@ from transformers import BertModel, BertTokenizer, BertForTokenClassification
 from scipy.spatial.distance import cosine
 from preprocessing import loadRawData
 from model import BERTTransform
-
+"""
 ## CLASSIFICATION
 classification = pd.read_csv('./classification.csv')
 df = pd.read_csv('./classification.csv')
@@ -15,7 +15,7 @@ for data in df['class']:
     _, vec = BERTTransform(string)
     class_vec.append(torch.mean(torch.cat((vec), dim=0).reshape(len(data) + 2, 768), dim=0))
     print(data, torch.mean(torch.cat((vec), dim=0).reshape(len(data) + 2, 768), dim=0)[:5])
-
+"""
 ## DATA
 data = loadRawData('./textdata/development_2.txt')
 
@@ -30,11 +30,7 @@ for key in data.keys():
         tokens, token_vecs_sum = BERTTransform(text)
 
         for i, token_str in enumerate(tokens):
-            if i != 0 and i != len(token_str)-1 and token_str != '，' and token_str != '。':
-                for j in range(len(class_vec)):
-                    if (1 - cosine(token_vecs_sum[i], class_vec[j]) > 0.6):
-                        print(token_str, j, 1-cosine(token_vecs_sum[i], class_vec[j]))
-#            print(i, token_str, token_vecs_sum[i][:5])
+            print(i, token_str, token_vecs_sum[i][:5])
 
 #doc = torch.sum(torch.cat((token_vecs_sum[4:6]), dim=0).reshape(2, 768), dim=0)
 #print(doc[:5])

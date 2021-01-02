@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import pandas as pd
 from tqdm import tqdm, trange
@@ -40,11 +41,12 @@ tag_values.append('PAD')
 tag2idx = {t: i for i, t in enumerate(tag_values)}
 
 MAX_LEN = 75
-bs = 32
+bs = 16
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 n_gpu = torch.cuda.device_count()
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
+#tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
 tokenized_texts_and_labels = [tokenize_and_preserve_labels(sent, labs) for sent, labs in zip(sentences, labels)]
 tokenized_texts = [token_label_pair[0] for token_label_pair in tokenized_texts_and_labels]
@@ -78,6 +80,7 @@ valid_dataloader = DataLoader(valid_data, sampler=valid_sampler, batch_size=bs)
 
 
 model = BertForTokenClassification.from_pretrained('bert-base-chinese',
+#model = BertForTokenClassification.from_pretrained('bert-base-cased',
         num_labels=len(tag2idx), output_attentions=False, output_hidden_states=False)
 model.cuda();
 
@@ -93,11 +96,7 @@ else:
     param_optimizer = list(model.classifier.named_parameters())
     optimizer_grouped_parameters = [{"params": [p for n, p in param_optimizer]}]
 
-optimizer = AdamW(
-    optimizer_grouped_parameters,
-    lr=3e-5,
-    eps=1e-8
-)
+optimizer = AdamW(optimizer_grouped_parameters, lr=3e-5, eps=1e-8)
 
 
 
@@ -108,11 +107,7 @@ max_grad_norm = 1.0
 total_steps = len(train_dataloader) * epochs
 
 # Create the learning rate scheduler.
-scheduler = get_linear_schedule_with_warmup(
-    optimizer,
-    num_warmup_steps=0,
-    num_training_steps=total_steps
-)
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
 
 
@@ -202,31 +197,37 @@ for _ in trange(epochs, desc="Epoch"):
     valid_tags = [tag_values[l_i] for l in true_labels
                                   for l_i in l if tag_values[l_i] != "PAD"]
     print("Validation Accuracy: {}".format(accuracy_score(pred_tags, valid_tags)))
-    print("Validation F1-Score: {}".format(f1_score(pred_tags, valid_tags)))
+#print("Validation F1-Score: {}".format(f1_score(pred_tags, valid_tags)))
     print()
 
 
 text = loadRawData('./textdata/development_2.txt')
+f = open('./textdata/test.data', 'w')
 
 for key in text.keys():
-    test_sentence = text[key]
+    for test_sentence in re.split(r'[：|，|。]', text[key]):
 
-    tokenized_sentence = tokenizer.encode(test_sentence)
-    input_ids = torch.tensor([tokenized_sentence]).cuda()
+        tokenized_sentence = tokenizer.encode(test_sentence)
+        input_ids = torch.tensor([tokenized_sentence]).cuda()
 
-    with torch.no_grad():
-        output = model(input_ids)
-    label_indices = np.argmax(output[0].to('cpu').numpy(), axis=2)
+        print(input_ids.size())
 
-    tokens = tokenizer.convert_ids_to_tokens(input_ids.to('cpu').numpy()[0])
-    new_tokens, new_labels = [], []
-    for token, label_idx in zip(tokens, label_indices[0]):
-        if token.startswith("##"):
-            new_tokens[-1] = new_tokens[-1] + token[2:]
-        else:
-            new_labels.append(tag_values[label_idx])
-            new_tokens.append(token)
+        with torch.no_grad():
+            output = model(input_ids)
+        label_indices = np.argmax(output[0].to('cpu').numpy(), axis=2)
 
-    for token, label in zip(new_tokens, new_labels):
-        print("{}\t{}".format(label, token))
+        tokens = tokenizer.convert_ids_to_tokens(input_ids.to('cpu').numpy()[0])
+        new_tokens, new_labels = [], []
+        for token, label_idx in zip(tokens, label_indices[0]):
+            if token.startswith("##"):
+                new_tokens[-1] = new_tokens[-1] + token[2:]
+            else:
+                new_labels.append(tag_values[label_idx])
+                new_tokens.append(token)
+
+        for token, label in zip(new_tokens, new_labels):
+            f.write('{} {}\n'.format(token, label))
+            #print("{} {}".format(token, label))
+
+f.close()
 
