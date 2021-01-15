@@ -4,7 +4,8 @@ class SentenceGetter(object):
         self.data = data
         self.empty = False
         agg_func = lambda s: [(w, t) for w, t in zip(s['Word'].values.tolist(), s['Tag'].values.tolist())]
-        self.grouped = self.data.groupby('Article').apply(agg_func)
+#self.grouped = self.data.groupby('Article').apply(agg_func)
+        self.grouped = self.data.groupby('Sentence #').apply(agg_func)
         self.sentences = [s for s in self.grouped]
 
     def get_next(self):

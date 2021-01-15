@@ -12,7 +12,10 @@ from transformers import BertTokenizer, BertConfig, BertForTokenClassification, 
 from keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
 
-from seqeval.metrics import f1_score, accuracy_score
+from seqeval.metrics import f1_score, accuracy_score, classification_report
+
+import matplotlib.pyplot as plt
+#import seaborn as sns
 
 def tokenize_and_preserve_labels(sentence, text_labels):
     tokenized_sentence = []
@@ -26,7 +29,8 @@ def tokenize_and_preserve_labels(sentence, text_labels):
 
     return tokenized_sentence, labels
 
-data = pd.read_csv('./textdata/train.data')
+#data = pd.read_csv('./textdata/train.data')
+data = pd.read_csv('./output3.csv')
 #print(data.tail(20))
 getter = SentenceGetter(data)
 
@@ -40,13 +44,12 @@ tag_values = list(set(data['Tag'].values))
 tag_values.append('PAD')
 tag2idx = {t: i for i, t in enumerate(tag_values)}
 
-MAX_LEN = 75
-bs = 16
+MAX_LEN = 512
+bs = 32
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 n_gpu = torch.cuda.device_count()
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
-#tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
 tokenized_texts_and_labels = [tokenize_and_preserve_labels(sent, labs) for sent, labs in zip(sentences, labels)]
 tokenized_texts = [token_label_pair[0] for token_label_pair in tokenized_texts_and_labels]
@@ -80,7 +83,6 @@ valid_dataloader = DataLoader(valid_data, sampler=valid_sampler, batch_size=bs)
 
 
 model = BertForTokenClassification.from_pretrained('bert-base-chinese',
-#model = BertForTokenClassification.from_pretrained('bert-base-cased',
         num_labels=len(tag2idx), output_attentions=False, output_hidden_states=False)
 model.cuda();
 
@@ -197,20 +199,38 @@ for _ in trange(epochs, desc="Epoch"):
     valid_tags = [tag_values[l_i] for l in true_labels
                                   for l_i in l if tag_values[l_i] != "PAD"]
     print("Validation Accuracy: {}".format(accuracy_score(pred_tags, valid_tags)))
-#print("Validation F1-Score: {}".format(f1_score(pred_tags, valid_tags)))
+    print("Validation F1-Score: {}".format(f1_score([pred_tags], [valid_tags])))
     print()
+    
+print(classification_report([pred_tags], [valid_tags]))
 
+# Use plot styling from seaborn.
+#sns.set(style='darkgrid')
 
+# Increase the plot size and font size.
+#sns.set(font_scale=1.5)
+#plt.rcParams["figure.figsize"] = (12,6)
+'''
+# Plot the learning curve.
+plt.plot(loss_values, 'b-o', label="training loss")
+plt.plot(validation_loss_values, 'r-o', label="validation loss")
+
+# Label the plot.
+plt.title("Learning curve")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.legend()
+'''
+
+"""
 text = loadRawData('./textdata/development_2.txt')
-f = open('./textdata/test.data', 'w')
+f = open('./textdata/test1.data', 'w')
 
 for key in text.keys():
     for test_sentence in re.split(r'[：|，|。]', text[key]):
 
         tokenized_sentence = tokenizer.encode(test_sentence)
         input_ids = torch.tensor([tokenized_sentence]).cuda()
-
-        print(input_ids.size())
 
         with torch.no_grad():
             output = model(input_ids)
@@ -227,7 +247,10 @@ for key in text.keys():
 
         for token, label in zip(new_tokens, new_labels):
             f.write('{} {}\n'.format(token, label))
-            #print("{} {}".format(token, label))
+#            print("{} {}".format(token, label))
 
 f.close()
+"""
 
+
+#plt.show()
